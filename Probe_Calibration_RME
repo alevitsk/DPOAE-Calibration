@@ -134,7 +134,9 @@ else
     error('Something wrong! Calibration aborted!');
 end
 
-for m = 1:calib.CavNumb
+ll=0;
+for m = [3,4,5]
+    ll=ll+1;
     %     %Play chirp and measure response
     %     for n = 1: (calib.Averages + calib.ThrowAway)
     %         %Start playing from the buffer:
@@ -168,20 +170,20 @@ for m = 1:calib.CavNumb
         page1 = playrec('playrec',db2mag(-30)*buffdata(driver,:)',3,length(buffdata(1,:)),3);
         playrec('block',page1);
     end
-    blockcompletion = playrec('block',((calib.Averages + calib.ThrowAway) * m)-1); % block until page 260 * thisblock
+    blockcompletion = playrec('block',((calib.Averages + calib.ThrowAway) * ll)-1); % block until page 260 * thisblock
     for n = 0: (calib.Averages + calib.ThrowAway - 1)
         pagesPerCalib = calib.Averages + calib.ThrowAway;
-        playrecpage = n + (pagesPerCalib * (m-1));
+        playrecpage = n + (pagesPerCalib * (ll-1));
         
         %Start playing from the buffer:
         calib.recbuff(n+1,:)=playrec('getRec',playrecpage)';
     end
     playrec('delPage');
     %% Compute the average
-    calib.vins(m, :, :) = calib.recbuff( (calib.ThrowAway + 1):end, (Delay+1):end);
-    energy = squeeze(sum(calib.vins(m,:,:).^2, 3));
+    calib.vins(ll, :, :) = calib.recbuff( (calib.ThrowAway + 1):end, (Delay+1):end);
+    energy = squeeze(sum(calib.vins(ll,:,:).^2, 3));
     good = energy < median(energy) + 2*mad(energy);
-    calib.recbuffavg = squeeze(mean(calib.vins(m, good, :), 2));
+    calib.recbuffavg = squeeze(mean(calib.vins(ll, good, :), 2));
     Vavg = rfft(calib.recbuffavg); %./ rfft(vo); 
 
     calib.good = good;   
@@ -202,7 +204,7 @@ for m = 1:calib.CavNumb
     % Note no attenuation gives 4.75 V peak for the chirp
     Vo = rfft(calib.vo) * 4.75 * db2mag(-1 * calib.Attenuation);
     
-    calib.CavRespH(:,m) =  output_Pa_20uPa_per_Vpp ./ Vo; % unit = 20 uPa/Vpp
+    calib.CavRespH(:,ll) =  output_Pa_20uPa_per_Vpp ./ Vo; % unit = 20 uPa/Vpp
     calib.unit = '20 uPa / 1 Vpeak';
     
     if m < calib.CavNumb
@@ -354,4 +356,3 @@ ER10XConnectUnloadLib()
 rmpath(p10x);
 playrec('reset');
 % just before the subject arrives
-
